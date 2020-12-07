@@ -21,15 +21,15 @@ def main():
             break
         except:
             print('wait for server 5 seconds...')
-            time.sleep(61)
+            time.sleep(5)
 
 
 def run():
-    latest_id = get_latest_saved_petition_num() # default : 593728
-    while latest_id > 584274:
+    run.latest_id = get_latest_saved_petition_num() # default : 593728
+    while run.latest_id > 584273:
         time.sleep(1)
-        save_petition(get_petition(latest_id))
-        latest_id -= 1
+        save_petition(get_petition(run.latest_id))
+        run.latest_id -= 1
 
 
 # 전체 만료청원 가장 최근에 만료된 청원 번호 가져오기
@@ -77,11 +77,18 @@ def get_petition(num_petition):
                 'title': title,
                 'content': content
             }
+        else:
+            return False
     except:
-        # 수정중
-        pass
-
-    return False
+        try:
+            blind_petition = soup.select("div.wvcontents > h3")[0].get_text(strip=True)
+            if blind_petition == '[관리자에 의해 비공개된 청원입니다]':
+                print('[관리자에 의해 비공개된 청원입니다]')
+                return False
+        except:
+            print("서버 요청 오류...")
+            time.sleep(61)
+            run.latest_id += 1
 
 
 # 청원 내용을 csv 'utf-8' 형식으로 저장한다.
