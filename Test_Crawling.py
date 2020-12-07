@@ -1,10 +1,12 @@
+#-*- coding:utf-8 -*-
 import requests
 from bs4 import BeautifulSoup
 from selenium import webdriver
+from urllib import request
 import time
 import re
-
-
+import os
+import csv
 
 
 """
@@ -21,6 +23,10 @@ print(info_petition[1].get_text(strip=True)[-10:]) # 청원시작 날짜
 print(text)
 """
 
+DATA_DIR = 'Data_CSV'
+
+CSV_PETITION = os.path.join(DATA_DIR, 'petition.csv')
+
 
 def main():
     while True:
@@ -33,14 +39,18 @@ def main():
             time.sleep(5)
 
 def run():
-    # 데이터를 저장할 디렉터리 생성
+    latest_id = 593728
+    while latest_id > 593628:
+        save_petition(get_petition(latest_id))
+        latest_id -= 1
     try:
-        pass
-    except:
-        pass
+        print('run...')
 
-    print('run...')
-    get_petition(593813)
+    except:
+        print('error...')
+        pass
+    print('end')
+
 
 
 
@@ -62,31 +72,52 @@ def get_latest_petition_num():
 
 
 
+# 청원 내용 가져오기
 def get_petition(num_petition):
 
     URL = "https://www1.president.go.kr/petitions/" + str(num_petition)
-    response = requests.get(url=URL)
-    soup = BeautifulSoup(response.text, "html.parser")
+    html = requests.get(url=URL)
+    # response = request.urlopen(URL).read().decode('utf-8')
+    soup = BeautifulSoup(html.text, "html.parser")
+    print(num_petition)
 
-    # 카테고리 확인을 위한
+    # 카테고리 확인
     info_petition = soup.select("ul.petitionsView_info_list > li")
-    category = info_petition[0].get_text(strip=True)[-6:]
-
-    print(info_petition[0].get_text(strip=True)[-6:])  # 카테고리
-    print(info_petition[1].get_text(strip=True)[-10:])  # 청원시작 날짜
+    category = info_petition[0].get_text(strip=True)[-6:] # 카테고리
 
     if category == "인권/성평등":
-        print("인권/성평등 카테고리입니다.")
-        print(info_petition[1].get_text(strip=True)[-10:])  # 청원시작 날짜
+        # print("인권/성평등 카테고리입니다.")
 
-        text = remove_whitespaces(soup.find("div", {"class": "View_write"}).text)
-        print(text)
-    else:
-        print("카테고리가 해당되지 않습니다.")
+        date = info_petition[1].get_text(strip=True)[-10:] # 청원 시작 날짜
+        title = soup.find("h3", {"class":"petitionsView_title"}).text # 청원 제목
+        content = remove_whitespaces(soup.find("div", {"class": "View_write"}).text) # 청원 내용
+        print('date : ', date)
+        print('titile : ', title)
+        print('content : ', content)
+        return {
+            'petition_num': num_petition,
+            'date': date,
+            'title': title,
+            'content': content
+        }
+
+    return False
 
 
-
-
+def save_petition(petition):
+    cols = [
+        'petition_num', 'date', 'title', 'content'
+    ]
+    # 파일이 없으면 파일을 생성하고 cols를 첫행에 추가해준다.
+    if not os.path.exists(CSV_PETITION):
+        with open(CSV_PETITION, 'w', newline='', encoding='utf-8') as f:
+            w = csv.writer(f)
+            w.writerow(cols)
+    if petition:
+        # 데이터 저장
+        with open(CSV_PETITION, 'a', newline='', encoding='utf-8') as f:
+            w = csv.writer(f)
+            w.writerow(petition[col] for col in cols)
 
 
 
