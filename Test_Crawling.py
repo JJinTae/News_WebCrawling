@@ -7,51 +7,29 @@ import time
 import re
 import os
 import csv
+import pandas as pd
 
-
-"""
-URL = "https://www1.president.go.kr/petitions/59352"
-
-response = requests.get(url=URL)
-soup = BeautifulSoup(response.text, "html.parser")
-
-info_petition = soup.select("ul.petitionsView_info_list > li")
-text = remove_whitespaces(soup.find("div", {"class":"View_write"}).text)
-
-print(info_petition[0].get_text(strip=True)[-6:]) # 카테고리
-print(info_petition[1].get_text(strip=True)[-10:]) # 청원시작 날짜
-print(text)
-"""
 
 DATA_DIR = 'Data_CSV'
-
 CSV_PETITION = os.path.join(DATA_DIR, 'petition.csv')
 
 
 def main():
     while True:
-        run()
         try:
-            pass
+            run()
             break
         except:
             print('wait for server 5 seconds...')
-            time.sleep(5)
+            time.sleep(61)
+
 
 def run():
-    latest_id = 593728
-    while latest_id > 593628:
+    latest_id = get_latest_saved_petition_num() # default : 593728
+    while latest_id > 584274:
+        time.sleep(1)
         save_petition(get_petition(latest_id))
         latest_id -= 1
-    try:
-        print('run...')
-
-    except:
-        print('error...')
-        pass
-    print('end')
-
-
 
 
 # 전체 만료청원 가장 최근에 만료된 청원 번호 가져오기
@@ -71,39 +49,42 @@ def get_latest_petition_num():
     return latest_petition_num
 
 
-
 # 청원 내용 가져오기
 def get_petition(num_petition):
 
-    URL = "https://www1.president.go.kr/petitions/" + str(num_petition)
-    html = requests.get(url=URL)
-    # response = request.urlopen(URL).read().decode('utf-8')
+    html = read_html(num_petition)
+
     soup = BeautifulSoup(html.text, "html.parser")
     print(num_petition)
 
     # 카테고리 확인
-    info_petition = soup.select("ul.petitionsView_info_list > li")
-    category = info_petition[0].get_text(strip=True)[-6:] # 카테고리
+    try:
+        info_petition = soup.select("ul.petitionsView_info_list > li")
+        category = info_petition[0].get_text(strip=True)[-6:]  # 카테고리
 
-    if category == "인권/성평등":
-        # print("인권/성평등 카테고리입니다.")
+        if category == "인권/성평등":
+            # print("인권/성평등 카테고리입니다.")
 
-        date = info_petition[1].get_text(strip=True)[-10:] # 청원 시작 날짜
-        title = soup.find("h3", {"class":"petitionsView_title"}).text # 청원 제목
-        content = remove_whitespaces(soup.find("div", {"class": "View_write"}).text) # 청원 내용
-        print('date : ', date)
-        print('titile : ', title)
-        print('content : ', content)
-        return {
-            'petition_num': num_petition,
-            'date': date,
-            'title': title,
-            'content': content
-        }
+            date = info_petition[1].get_text(strip=True)[-10:]  # 청원 시작 날짜
+            title = soup.find("h3", {"class": "petitionsView_title"}).text  # 청원 제목
+            content = remove_whitespaces(soup.find("div", {"class": "View_write"}).text)  # 청원 내용
+            print('date : ', date)
+            print('titile : ', title)
+            print('content : ', content)
+            return {
+                'petition_num': num_petition,
+                'date': date,
+                'title': title,
+                'content': content
+            }
+    except:
+        # 수정중
+        pass
 
     return False
 
 
+# 청원 내용을 csv 'utf-8' 형식으로 저장한다.
 def save_petition(petition):
     cols = [
         'petition_num', 'date', 'title', 'content'
@@ -118,9 +99,27 @@ def save_petition(petition):
         with open(CSV_PETITION, 'a', newline='', encoding='utf-8') as f:
             w = csv.writer(f)
             w.writerow(petition[col] for col in cols)
+        print("저장완료")
 
 
+# hmtl을 불러온다.
+def read_html(num_petition):
+    headers = {"User-Agent" : "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36"}
+    URL = "https://www1.president.go.kr/petitions/" + str(num_petition)
+    html = requests.get(url=URL, headers = headers)
+    print(html.status_code)
 
+    return html
+
+
+# csv 파일의 마지막 청원 문헌 번호를 불러온다. default : 593728(2020-10 기준)
+def get_latest_saved_petition_num():
+    if not os.path.isfile(CSV_PETITION):
+        return 593728
+
+    f = pd.read_csv(CSV_PETITION, header=None, index_col=0, delimiter=',')
+
+    return int(f.index.values[-1]) - 1
 
 
 # 본문의 불필요한 공백 문자 제거
@@ -130,7 +129,6 @@ def remove_whitespaces(text):
     lines = (l for l in lines if len(l) > 0)
 
     return '\n'.join(lines)
-
 
 
 if __name__ == '__main__':
