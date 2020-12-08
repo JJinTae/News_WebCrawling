@@ -2,7 +2,6 @@
 import requests
 from bs4 import BeautifulSoup
 from selenium import webdriver
-from urllib import request
 import time
 import re
 import os
