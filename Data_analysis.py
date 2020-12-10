@@ -18,7 +18,7 @@ import numpy as np
 # from nltk.corpus import stopwords
 
 DATA_DIR = 'Data_CSV'
-CSV_PETITION = os.path.join(DATA_DIR, 'petition_result_v2.csv')
+CSV_PETITION = os.path.join(DATA_DIR, 'petition_result_v2_content_M6.csv')
 
 # nouns detect stopwords
 STOPWORDS_TXT = open('stopwords.txt', 'r', encoding='utf-8')
@@ -26,6 +26,8 @@ stopwords = STOPWORDS_TXT.readlines()
 for i in range(len(stopwords)):
     stopwords[i] = stopwords[i].strip()
 
+# wordcloud all
+"""
 # wordcloud stopwords
 STOPWORDS_WORDCLOUD_TXT = open('stopwords_wordcloud.txt', 'r', encoding='utf-8')
 stopwords_wordcloud = STOPWORDS_WORDCLOUD_TXT.readlines()
@@ -48,7 +50,7 @@ def _word_count(df, kon):
 def wordcloud(df, kon, n):
     okt_count = _word_count(df,kon)
     word_data = okt_count.most_common(n)
-    wc = WordCloud(font_path='/NGULIM.TTF', background_color='white', width=800, height=600)
+    wc = WordCloud(font_path='/NGULIM.TTF', background_color='white', width=800, height=600, )
     cloud = wc.generate_from_frequencies(dict(word_data))
     plt.figure(figsize=(10, 8))
     plt.imshow(cloud)
@@ -64,8 +66,8 @@ df = pd.read_csv(CSV_PETITION, parse_dates=['date'])
 
 status = wordcloud(df, kon=nlpy, n=50)
 print(status)
-
 """
+
 # knolpy
 f = open(CSV_PETITION, "r", encoding='utf-8')
 lines = f.read()
@@ -78,9 +80,9 @@ count = Counter(nouns)
 tag_count = []
 tags = []
 
-for n, c in count.most_common(50):
+for n, c in count.most_common(100):
     dics = {'tag': n, 'count':c}
-    if len(dics['tag']) >=2 and len(tags) <= 19:
+    if len(dics['tag']) >=2 and len(tags) <= 30:
         if n not in stopwords:
             tag_count.append(dics)
             tags.append(dics['tag'])
@@ -89,7 +91,7 @@ for tag in tag_count:
     print(" {:<14}".format(tag['tag']), end='\t')
     print("{}".format(tag['count']))
 
-"""
+
 
 """
 def preprocessing(text):
